@@ -11,23 +11,16 @@ uint32_t fromChar(char c) {
     return 0;
 }
 
-//todo: rewrite constructor (described in Notion)
 BigInteger::BigInteger(const std::string &str) {
     digits_count = ((int) str.length() + 7) / 8;
     if (digits_count != 0) {
         arr = (uint32_t *) malloc(digits_count * 4);
-        auto it = str.rbegin();
-        for (int i = 0; i < digits_count - 1; ++i) {
+        for (int i = 0; i < digits_count; ++i)
             arr[i] = 0;
-            for (int j = 0; j < 8; ++j) {
-                arr[i] += fromChar(*it) << (j * 4);
-                ++it;
-            }
-        }
-        arr[digits_count - 1] = 0;
-        for (int i = 0; it != str.rend(); ++i) {
-            arr[digits_count - 1] += fromChar(*it) << (i * 4);
-            ++it;
+        int i = 0;
+        for (auto it = str.rbegin(); it != str.rend(); ++it) {
+            arr[i / 8] += fromChar(*it) << ((i % 8) * 4);
+            ++i;
         }
     }
 }
