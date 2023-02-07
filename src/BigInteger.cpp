@@ -196,6 +196,17 @@ BigInteger BigInteger::operator*(const BigInteger &bigInteger) const {
     return BigInteger(res, len);
 }
 
+bool less(const uint32_t *arr1, const uint32_t *arr2, int length) {
+    bool b = false;
+    for (int i = length - 1; i >= 0; --i) {
+        if (arr1[i] < arr2[i])
+            return true;
+        if (arr1[i] > arr2[i])
+            return false;
+    }
+    return false;
+}
+
 BigInteger BigInteger::operator/(const BigInteger &bigInteger) const {
     const BigInteger &A = *this;
     const BigInteger &B = bigInteger;
@@ -221,24 +232,8 @@ BigInteger BigInteger::operator/(const BigInteger &bigInteger) const {
             --t;
 
         // exit conditions
-        if (t < k)
+        if (t < k || (t == k && less(R, B.arr, (int) B.digits_count)))
             break;
-        if (t == k) {
-            // b = R < B;
-            bool b = false;
-            for (int i = (int) B.digits_count - 1; i >= 0; --i) {
-                if (R[i] < B.arr[i]) {
-                    b = true;
-                    break;
-                }
-                if (R[i] > B.arr[i]) {
-                    b = false;
-                    break;
-                }
-            }
-            if (b)
-                break;
-        }
 
         // move B in B_ to t
         int q = (t - k) / 32, r = (t - k) % 32;
@@ -260,21 +255,8 @@ BigInteger BigInteger::operator/(const BigInteger &bigInteger) const {
                 B_[i] = 0;
         }
 
-        // b = R < B_;
-        bool b = false;
-        for (int i = (int) A.digits_count - 1; i >= 0; --i) {
-            if (R[i] < B_[i]) {
-                b = true;
-                break;
-            }
-            if (R[i] > B_[i]) {
-                b = false;
-                break;
-            }
-        }
-
         // if (R < B_)
-        if (b) {
+        if (less(R, B_, (int) A.digits_count)) {
             --t;
             for (int i = 0; i < A.digits_count - 1; ++i)
                 B_[i] = (B_[i] >> 1) | (B_[i + 1] << 31);
