@@ -118,8 +118,21 @@ BigInteger BigInteger::operator+(const BigInteger &bigInteger) const {
         res[A.digits_count] = carry;
         return BigInteger(res, A.digits_count + 1);
     } else {
-        auto reres = (uint32_t *) realloc(res, A.digits_count * 4);
-        return BigInteger(reres, A.digits_count);
+        res = (uint32_t *) realloc(res, A.digits_count * 4);
+        return BigInteger(res, A.digits_count);
+    }
+}
+
+uint32_t * removeLeadingZeros(uint32_t *arr, int length, int &newLength) {
+    int i;
+    for (i = length - 1; i >= 0 && arr[i] == 0; --i);
+    if (i == -1) {
+        newLength = 0;
+        return nullptr;
+    }
+    else {
+        newLength = i + 1;
+        return (uint32_t *) realloc(arr, (i + 1) * 4);
     }
 }
 
@@ -154,14 +167,9 @@ BigInteger BigInteger::operator-(const BigInteger &bigInteger) const {
     if (borrow != 0)
         return BigInteger(nullptr, 0);
     else {
-        int i;
-        for (i = (int) A.digits_count - 1; i >= 0 && res[i] == 0; --i);
-        if (i == -1)
-            return BigInteger(nullptr, 0);
-        else {
-            auto reres = (uint32_t *) realloc(res, (i + 1) * 4);
-            return BigInteger(reres, i + 1);
-        }
+        int len;
+        res = removeLeadingZeros(res, (int) A.digits_count, len);
+        return BigInteger(res, len);
     }
 }
 
@@ -183,14 +191,9 @@ BigInteger BigInteger::operator*(const BigInteger &bigInteger) const {
             }
         }
     }
-    int i;
-    for (i = (int) (A.digits_count + B.digits_count) - 1; i >= 0 && res[i] == 0; --i);
-    if (i == -1)
-        return BigInteger(nullptr, 0);
-    else {
-        auto reres = (uint32_t *) realloc(res, (i + 1) * 4);
-        return BigInteger(reres, i + 1);
-    }
+    int len;
+    res = removeLeadingZeros(res, (int) A.digits_count + (int) B.digits_count, len);
+    return BigInteger(res, len);
 }
 
 BigInteger BigInteger::operator/(const BigInteger &bigInteger) const {
@@ -300,12 +303,7 @@ BigInteger BigInteger::operator/(const BigInteger &bigInteger) const {
     delete[] R;
     delete[] B_;
 
-    int i;
-    for (i = (int) A.digits_count - 1; i >= 0 && res[i] == 0; --i);
-    if (i == -1)
-        return BigInteger(nullptr, 0);
-    else {
-        auto reres = (uint32_t *) realloc(res, (i + 1) * 4);
-        return BigInteger(reres, i + 1);
-    }
+    int len;
+    res = removeLeadingZeros(res, (int) A.digits_count, len);
+    return BigInteger(res, len);
 }
