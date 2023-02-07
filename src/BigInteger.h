@@ -7,9 +7,9 @@
 class BigInteger {
 private:
     uint32_t *arr{};
-    unsigned digits_count;
+    int digits_count;
 
-    explicit BigInteger(uint32_t *ptr, unsigned length);
+    explicit BigInteger(uint32_t *ptr, int length);
 
 public:
     explicit BigInteger(const std::string &str);

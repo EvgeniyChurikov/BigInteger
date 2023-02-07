@@ -1,7 +1,7 @@
 #include "BigInteger.h"
 
 
-BigInteger::BigInteger(uint32_t *ptr, unsigned length) : arr(ptr), digits_count(length) {}
+BigInteger::BigInteger(uint32_t *ptr, int length) : arr(ptr), digits_count(length) {}
 
 uint32_t fromChar(char c) {
     if (c >= '0' && c <= '9')
@@ -13,7 +13,7 @@ uint32_t fromChar(char c) {
 
 //todo: rewrite constructor (described in Notion)
 BigInteger::BigInteger(const std::string &str) {
-    digits_count = (str.length() + 7) / 8;
+    digits_count = ((int) str.length() + 7) / 8;
     if (digits_count != 0) {
         arr = (uint32_t *) malloc(digits_count * 4);
         auto it = str.rbegin();
@@ -84,11 +84,11 @@ char toChar(uint32_t n) {
 std::ostream &operator<<(std::ostream &stream, const BigInteger &bigInteger) {
     if (bigInteger.digits_count != 0) {
         int i;
-        for (i = 7; i >= 0 && (bigInteger.arr[bigInteger.digits_count - 1] & (0xf << (i * 4))) == 0; --i);
+        for (i = 7; i >= 0 && ((bigInteger.arr[bigInteger.digits_count - 1] >> (i * 4)) & 0xf) == 0; --i);
         for (; i >= 0; --i) {
             stream << toChar((bigInteger.arr[bigInteger.digits_count - 1] >> (i * 4)) & 0xf);
         }
-        for (i = (int) (bigInteger.digits_count - 2); i >= 0; --i) {
+        for (i = bigInteger.digits_count - 2; i >= 0; --i) {
             for (int j = 7; j >= 0; --j) {
                 stream << toChar((bigInteger.arr[i] >> (j * 4)) & 0xf);
             }
@@ -104,12 +104,12 @@ BigInteger BigInteger::operator+(const BigInteger &bigInteger) const {
     auto res = (uint32_t *) malloc((A.digits_count + 1) * 4);
 
     uint64_t carry = 0;
-    for (unsigned i = 0; i < B.digits_count; ++i) {
+    for (int i = 0; i < B.digits_count; ++i) {
         uint64_t temp = (uint64_t) A.arr[i] + (uint64_t) B.arr[i] + carry;
         res[i] = temp & 0xffffffff;
         carry = temp >> 32;
     }
-    for (unsigned i = B.digits_count; i < A.digits_count; ++i) {
+    for (int i = B.digits_count; i < A.digits_count; ++i) {
         uint64_t temp = (uint64_t) A.arr[i] + carry;
         res[i] = temp & 0xffffffff;
         carry = temp >> 32;
@@ -144,7 +144,7 @@ BigInteger BigInteger::operator-(const BigInteger &bigInteger) const {
     int64_t borrow = 0;
     if (A.digits_count < B.digits_count)
         return BigInteger(nullptr, 0);
-    for (unsigned i = 0; i < B.digits_count; ++i) {
+    for (int i = 0; i < B.digits_count; ++i) {
         int64_t temp = (int64_t) A.arr[i] - (int64_t) B.arr[i] - borrow;
         if (temp >= 0) {
             res[i] = temp;
@@ -154,7 +154,7 @@ BigInteger BigInteger::operator-(const BigInteger &bigInteger) const {
             borrow = 1;
         }
     }
-    for (unsigned i = B.digits_count; i < A.digits_count; ++i) {
+    for (int i = B.digits_count; i < A.digits_count; ++i) {
         int64_t temp = (int64_t) A.arr[i] - borrow;
         if (temp >= 0) {
             res[i] = temp;
@@ -168,7 +168,7 @@ BigInteger BigInteger::operator-(const BigInteger &bigInteger) const {
         return BigInteger(nullptr, 0);
     else {
         int len;
-        res = removeLeadingZeros(res, (int) A.digits_count, len);
+        res = removeLeadingZeros(res, A.digits_count, len);
         return BigInteger(res, len);
     }
 }
@@ -192,12 +192,11 @@ BigInteger BigInteger::operator*(const BigInteger &bigInteger) const {
         }
     }
     int len;
-    res = removeLeadingZeros(res, (int) A.digits_count + (int) B.digits_count, len);
+    res = removeLeadingZeros(res, A.digits_count + B.digits_count, len);
     return BigInteger(res, len);
 }
 
 bool less(const uint32_t *arr1, const uint32_t *arr2, int length) {
-    bool b = false;
     for (int i = length - 1; i >= 0; --i) {
         if (arr1[i] < arr2[i])
             return true;
@@ -211,8 +210,8 @@ BigInteger BigInteger::operator/(const BigInteger &bigInteger) const {
     const BigInteger &A = *this;
     const BigInteger &B = bigInteger;
 
-    auto res = (uint32_t *) malloc((A.digits_count) * 4);
-    for (int i = 0; i < A.digits_count; ++i) {
+    auto res = (uint32_t *) malloc((A.digits_count - B.digits_count + 1) * 4);
+    for (int i = 0; i <= A.digits_count - B.digits_count; ++i) {
         res[i] = 0;
     }
 
@@ -220,9 +219,9 @@ BigInteger BigInteger::operator/(const BigInteger &bigInteger) const {
     for (int i = 0; i < A.digits_count; ++i) {
         R[i] = A.arr[i];
     }
-    int t = (int) A.digits_count * 32 - 1;
+    int t = A.digits_count * 32 - 1;  // bitLength(R)
     auto *B_ = new uint32_t[A.digits_count];
-    int k = (int) B.digits_count * 32 - 1;
+    int k = B.digits_count * 32 - 1;  // bitLength(B.arr)
     while (B.arr[k / 32] >> k % 32 == 0)
         --k;
 
@@ -232,10 +231,10 @@ BigInteger BigInteger::operator/(const BigInteger &bigInteger) const {
             --t;
 
         // exit conditions
-        if (t < k || (t == k && less(R, B.arr, (int) B.digits_count)))
+        if (t < k || (t == k && less(R, B.arr, B.digits_count)))
             break;
 
-        // move B in B_ to t
+        // move B in B_ to t (B_ = B << t;)
         int q = (t - k) / 32, r = (t - k) % 32;
         for (int i = 0; i < q; ++i)
             B_[i] = 0;
@@ -244,19 +243,19 @@ BigInteger BigInteger::operator/(const BigInteger &bigInteger) const {
             for (int i = 1; i < B.digits_count; ++i)
                 B_[q + i] = (B.arr[i] << r) | (B.arr[i - 1] >> (32 - r));
             B_[q + B.digits_count] = B.arr[B.digits_count - 1] >> (32 - r);
-            for (int i = q + (int) B.digits_count + 1; i < A.digits_count; ++i)
+            for (int i = q + B.digits_count + 1; i < A.digits_count; ++i)
                 B_[i] = 0;
         }
         else {
             B_[q] = B.arr[0];
             for (int i = 1; i < B.digits_count; ++i)
                 B_[q + i] = B.arr[i];
-            for (int i = q + (int) B.digits_count; i < A.digits_count; ++i)
+            for (int i = q + B.digits_count; i < A.digits_count; ++i)
                 B_[i] = 0;
         }
 
         // if (R < B_)
-        if (less(R, B_, (int) A.digits_count)) {
+        if (less(R, B_, A.digits_count)) {
             --t;
             for (int i = 0; i < A.digits_count - 1; ++i)
                 B_[i] = (B_[i] >> 1) | (B_[i + 1] << 31);
@@ -286,6 +285,6 @@ BigInteger BigInteger::operator/(const BigInteger &bigInteger) const {
     delete[] B_;
 
     int len;
-    res = removeLeadingZeros(res, (int) A.digits_count, len);
+    res = removeLeadingZeros(res, A.digits_count - B.digits_count + 1, len);
     return BigInteger(res, len);
 }
