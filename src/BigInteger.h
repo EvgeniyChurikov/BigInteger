@@ -11,14 +11,6 @@ private:
 
     explicit BigInteger(uint32_t *ptr, unsigned length);
 
-    unsigned bitLength() const;
-
-    bool operator<(const BigInteger &bigInteger) const;
-
-    bool operator>=(const BigInteger &bigInteger) const;
-
-    BigInteger operator<<(unsigned n) const;
-
 public:
     explicit BigInteger(const std::string &str);
 

@@ -193,86 +193,113 @@ BigInteger BigInteger::operator*(const BigInteger &bigInteger) const {
     }
 }
 
-unsigned BigInteger::bitLength() const {
-    int d, b;
-    for (d = (int) digits_count - 1; arr[d] == 0 && d >= 0; --d);
-    if (d == -1)
-        return 0;
-    for (b = 0; (arr[d] & ((1 << 31) >> b)) == 0; ++b);
-    return (d + 1) * 32 - b;
-}
-
-bool BigInteger::operator<(const BigInteger &bigInteger) const {
-    const BigInteger &A = *this;
-    const BigInteger &B = bigInteger;
-
-    if (A.digits_count < B.digits_count)
-        return true;
-    if (A.digits_count > B.digits_count)
-        return false;
-    for (int i = (int) A.digits_count - 1; i >= 0; --i) {
-        if (A.arr[i] < B.arr[i])
-            return true;
-        if (A.arr[i] > B.arr[i])
-            return false;
-    }
-    return false;
-}
-
-bool BigInteger::operator>=(const BigInteger &bigInteger) const {
-    return !(*this < bigInteger);
-}
-
-BigInteger BigInteger::operator<<(unsigned n) const {
-    unsigned q = n / 32, r = n % 32;
-    if (r != 0) {
-        auto res = (uint32_t *) malloc((q + digits_count + 1) * 4);
-        for (int i = 0; i < q; ++i)
-            res[i] = 0;
-        res[q] = arr[0] << r;
-        for (int i = 1; i < digits_count; ++i)
-            res[q + i] = (arr[i] << r) | (arr[i - 1] >> (32 - r));
-        res[q + digits_count] = arr[digits_count - 1] >> (32 - r);
-        if (res[q + digits_count] != 0)
-            return BigInteger(res, digits_count + q + 1);
-        else {
-            auto reres = (uint32_t *) realloc(res, (q + digits_count) * 4);
-            return BigInteger(reres, q + digits_count);
-        }
-    }
-    else {
-        auto res = (uint32_t *) malloc((q + digits_count) * 4);
-        for (int i = 0; i < q; ++i)
-            res[i] = 0;
-        res[q] = arr[0];
-        for (int i = 1; i < digits_count; ++i)
-            res[q + i] = arr[i];
-        return BigInteger(res, q + digits_count);
-    }
-}
-
 BigInteger BigInteger::operator/(const BigInteger &bigInteger) const {
     const BigInteger &A = *this;
     const BigInteger &B = bigInteger;
 
-    unsigned k = B.bitLength();
-    BigInteger R = A;
     auto res = (uint32_t *) malloc((A.digits_count) * 4);
     for (int i = 0; i < A.digits_count; ++i) {
         res[i] = 0;
     }
 
-    while (R >= B) {
-        unsigned t = R.bitLength();
-        BigInteger C = B << (t - k);
-        if (R < C) {
-            --t;
-            C = B << (t - k);
-        }
-        R = R - C;
-        unsigned q = (t - k) / 32, r = (t - k) % 32;
-        res[q] |= (1 << r);
+    auto *R = new uint32_t[A.digits_count];
+    for (int i = 0; i < A.digits_count; ++i) {
+        R[i] = A.arr[i];
     }
+    int t = (int) A.digits_count * 32 - 1;
+    auto *B_ = new uint32_t[A.digits_count];
+    int k = (int) B.digits_count * 32 - 1;
+    while (B.arr[k / 32] >> k % 32 == 0)
+        --k;
+
+    while (true) {
+        // move t to nearest 1
+        while (t > 0 && R[t / 32] >> t % 32 == 0)
+            --t;
+
+        // exit conditions
+        if (t < k)
+            break;
+        if (t == k) {
+            // b = R < B;
+            bool b = false;
+            for (int i = (int) B.digits_count - 1; i >= 0; --i) {
+                if (R[i] < B.arr[i]) {
+                    b = true;
+                    break;
+                }
+                if (R[i] > B.arr[i]) {
+                    b = false;
+                    break;
+                }
+            }
+            if (b)
+                break;
+        }
+
+        // move B in B_ to t
+        int q = (t - k) / 32, r = (t - k) % 32;
+        for (int i = 0; i < q; ++i)
+            B_[i] = 0;
+        if (r != 0) {
+            B_[q] = B.arr[0] << r;
+            for (int i = 1; i < B.digits_count; ++i)
+                B_[q + i] = (B.arr[i] << r) | (B.arr[i - 1] >> (32 - r));
+            B_[q + B.digits_count] = B.arr[B.digits_count - 1] >> (32 - r);
+            for (int i = q + (int) B.digits_count + 1; i < A.digits_count; ++i)
+                B_[i] = 0;
+        }
+        else {
+            B_[q] = B.arr[0];
+            for (int i = 1; i < B.digits_count; ++i)
+                B_[q + i] = B.arr[i];
+            for (int i = q + (int) B.digits_count; i < A.digits_count; ++i)
+                B_[i] = 0;
+        }
+
+        // b = R < B_;
+        bool b = false;
+        for (int i = (int) A.digits_count - 1; i >= 0; --i) {
+            if (R[i] < B_[i]) {
+                b = true;
+                break;
+            }
+            if (R[i] > B_[i]) {
+                b = false;
+                break;
+            }
+        }
+
+        // if (R < B_)
+        if (b) {
+            --t;
+            for (int i = 0; i < A.digits_count - 1; ++i)
+                B_[i] = (B_[i] >> 1) | (B_[i + 1] << 31);
+            B_[A.digits_count - 1] = B_[A.digits_count - 1] >> 1;
+        }
+
+        // R -= B_;
+        int64_t borrow = 0;
+        for (int i = 0; i < A.digits_count; ++i) {
+            int64_t temp = (int64_t) R[i] - (int64_t) B_[i] - borrow;
+            if (temp >= 0) {
+                R[i] = temp;
+                borrow = 0;
+            } else {
+                R[i] = 0x100000000 + temp;
+                borrow = 1;
+            }
+        }
+
+        // res += 1 << (t - k);
+        q = (t - k) / 32;
+        r = (t - k) % 32;
+        res[q] |= 1 << r;
+    }
+
+    delete[] R;
+    delete[] B_;
+
     int i;
     for (i = (int) A.digits_count - 1; i >= 0 && res[i] == 0; --i);
     if (i == -1)
