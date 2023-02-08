@@ -12,9 +12,9 @@ uint32_t fromChar(char c) {
 }
 
 BigInteger::BigInteger(const std::string &str) {
-    digits_count = ((int) str.length() + 7) / 8;
-    if (digits_count != 0) {
-        arr = (uint32_t *) malloc(digits_count * 4);
+    if (str != "0") {
+        digits_count = ((int) str.length() + 7) / 8;
+        arr = (uint32_t *) malloc(digits_count * sizeof(uint32_t));
         for (int i = 0; i < digits_count; ++i)
             arr[i] = 0;
         int i = 0;
@@ -22,17 +22,20 @@ BigInteger::BigInteger(const std::string &str) {
             arr[i / 8] += fromChar(*it) << ((i % 8) * 4);
             ++i;
         }
+    } else {
+        arr = nullptr;
+        digits_count = 0;
     }
 }
 
-BigInteger::BigInteger(const BigInteger &bigInteger) {
-    digits_count = bigInteger.digits_count;
+BigInteger::BigInteger(const BigInteger &bigInteger) : digits_count(bigInteger.digits_count) {
     if (digits_count != 0) {
-        arr = (uint32_t *) malloc(digits_count * 4);
+        arr = (uint32_t *) malloc(digits_count * sizeof(uint32_t));
         for (int i = 0; i < digits_count; ++i) {
             arr[i] = bigInteger.arr[i];
         }
-    }
+    } else
+        arr = nullptr;
 }
 
 BigInteger::~BigInteger() {
@@ -40,18 +43,18 @@ BigInteger::~BigInteger() {
 }
 
 BigInteger &BigInteger::operator=(const BigInteger &bigInteger) {
-    if (this != &bigInteger) {
-        if (digits_count != bigInteger.digits_count) {
-            free(arr);
-            digits_count = bigInteger.digits_count;
-            if (digits_count != 0)
-                arr = (uint32_t *) malloc(digits_count * 4);
-            else
-                arr = nullptr;
-        }
-        for (int i = 0; i < digits_count; ++i) {
-            arr[i] = bigInteger.arr[i];
-        }
+    if (this == &bigInteger)
+        return *this;
+    if (digits_count != bigInteger.digits_count) {
+        free(arr);
+        digits_count = bigInteger.digits_count;
+        if (digits_count != 0)
+            arr = (uint32_t *) malloc(digits_count * sizeof(uint32_t));
+        else
+            arr = nullptr;
+    }
+    for (int i = 0; i < digits_count; ++i) {
+        arr[i] = bigInteger.arr[i];
     }
     return *this;
 }
@@ -77,14 +80,12 @@ char toChar(uint32_t n) {
 std::ostream &operator<<(std::ostream &stream, const BigInteger &bigInteger) {
     if (bigInteger.digits_count != 0) {
         int i;
-        for (i = 7; i >= 0 && ((bigInteger.arr[bigInteger.digits_count - 1] >> (i * 4)) & 0xf) == 0; --i);
-        for (; i >= 0; --i) {
+        for (i = 7; ((bigInteger.arr[bigInteger.digits_count - 1] >> (i * 4)) & 0xf) == 0; --i);
+        for (; i >= 0; --i)
             stream << toChar((bigInteger.arr[bigInteger.digits_count - 1] >> (i * 4)) & 0xf);
-        }
         for (i = bigInteger.digits_count - 2; i >= 0; --i) {
-            for (int j = 7; j >= 0; --j) {
+            for (int j = 7; j >= 0; --j)
                 stream << toChar((bigInteger.arr[i] >> (j * 4)) & 0xf);
-            }
         }
     } else
         stream << '0';
@@ -94,7 +95,7 @@ std::ostream &operator<<(std::ostream &stream, const BigInteger &bigInteger) {
 BigInteger BigInteger::operator+(const BigInteger &bigInteger) const {
     const BigInteger &A = (digits_count <= bigInteger.digits_count ? bigInteger : *this);
     const BigInteger &B = (digits_count <= bigInteger.digits_count ? *this : bigInteger);
-    auto res = (uint32_t *) malloc((A.digits_count + 1) * 4);
+    auto res = (uint32_t *) malloc((A.digits_count + 1) * sizeof(uint32_t));
 
     uint64_t carry = 0;
     for (int i = 0; i < B.digits_count; ++i) {
@@ -111,7 +112,7 @@ BigInteger BigInteger::operator+(const BigInteger &bigInteger) const {
         res[A.digits_count] = carry;
         return BigInteger(res, A.digits_count + 1);
     } else {
-        res = (uint32_t *) realloc(res, A.digits_count * 4);
+        res = (uint32_t *) realloc(res, A.digits_count * sizeof(uint32_t));
         return BigInteger(res, A.digits_count);
     }
 }
@@ -124,14 +125,14 @@ uint32_t *removeLeadingZeros(uint32_t *arr, int length, int &newLength) {
         return nullptr;
     } else {
         newLength = i + 1;
-        return (uint32_t *) realloc(arr, (i + 1) * 4);
+        return (uint32_t *) realloc(arr, (i + 1) * sizeof(uint32_t));
     }
 }
 
 BigInteger BigInteger::operator-(const BigInteger &bigInteger) const {
     const BigInteger &A = *this;
     const BigInteger &B = bigInteger;
-    auto res = (uint32_t *) malloc(A.digits_count * 4);
+    auto res = (uint32_t *) malloc(A.digits_count * sizeof(uint32_t));
 
     int64_t borrow = 0;
     if (A.digits_count < B.digits_count)
@@ -168,7 +169,7 @@ BigInteger BigInteger::operator-(const BigInteger &bigInteger) const {
 BigInteger BigInteger::operator*(const BigInteger &bigInteger) const {
     const BigInteger &A = *this;
     const BigInteger &B = bigInteger;
-    auto res = (uint32_t *) malloc((A.digits_count + B.digits_count) * 4);
+    auto res = (uint32_t *) malloc((A.digits_count + B.digits_count) * sizeof(uint32_t));
     for (int i = 0; i < A.digits_count + B.digits_count; ++i) {
         res[i] = 0;
     }
@@ -202,39 +203,37 @@ BigInteger BigInteger::operator/(const BigInteger &bigInteger) const {
     const BigInteger &A = *this;
     const BigInteger &B = bigInteger;
 
-    auto res = (uint32_t *) malloc((A.digits_count - B.digits_count + 1) * 4);
-    for (int i = 0; i <= A.digits_count - B.digits_count; ++i) {
+    if (A.digits_count < B.digits_count)
+        return BigInteger(nullptr, 0);
+
+    auto res = (uint32_t *) malloc((A.digits_count - B.digits_count + 1) * sizeof(uint32_t));
+    for (int i = 0; i <= A.digits_count - B.digits_count; ++i)
         res[i] = 0;
-    }
 
     auto *R = new uint32_t[A.digits_count];
     for (int i = 0; i < A.digits_count; ++i) {
         R[i] = A.arr[i];
     }
     int t = A.digits_count * 32 - 1;  // bitLength(R)
+    while (R[t / 32] >> t % 32 == 0)
+        --t;
     auto *B_ = new uint32_t[A.digits_count];
     int k = B.digits_count * 32 - 1;  // bitLength(B.arr)
     while (B.arr[k / 32] >> k % 32 == 0)
         --k;
 
-    while (true) {
-        // move t to nearest 1
-        while (t > 0 && R[t / 32] >> t % 32 == 0)
-            --t;
-
-        // exit conditions
-        if (t < k || (t == k && less(R, B.arr, B.digits_count)))
-            break;
-
-        // move B in B_ to t (B_ = B << t;)
-        int q = (t - k) / 32, r = (t - k) % 32;
+    while (t > k || (t == k && !less(R, B.arr, B.digits_count))) {
+        // B_ = B << t;
+        int q = (t - k) / 32;
+        int r = (t - k) % 32;
         for (int i = 0; i < q; ++i)
             B_[i] = 0;
         if (r != 0) {
             B_[q] = B.arr[0] << r;
             for (int i = 1; i < B.digits_count; ++i)
                 B_[q + i] = (B.arr[i] << r) | (B.arr[i - 1] >> (32 - r));
-            B_[q + B.digits_count] = B.arr[B.digits_count - 1] >> (32 - r);
+            if (q + B.digits_count < A.digits_count)
+                B_[q + B.digits_count] = B.arr[B.digits_count - 1] >> (32 - r);
             for (int i = q + B.digits_count + 1; i < A.digits_count; ++i)
                 B_[i] = 0;
         } else {
@@ -270,6 +269,10 @@ BigInteger BigInteger::operator/(const BigInteger &bigInteger) const {
         q = (t - k) / 32;
         r = (t - k) % 32;
         res[q] |= 1 << r;
+
+        // move t to nearest 1
+        while (t >= 0 && R[t / 32] >> t % 32 == 0)
+            --t;
     }
 
     delete[] R;

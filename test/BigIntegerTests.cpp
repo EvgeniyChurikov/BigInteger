@@ -4,7 +4,7 @@
 // COPY
 
 TEST(copy, test1) {
-    BigInteger A("");
+    BigInteger A("0");
     BigInteger B = A;
     ASSERT_EQ(A, B);
 }
@@ -30,7 +30,7 @@ TEST(copy, test4) {
 // ASSIGNMENT
 
 TEST(assignment, test1) {
-    BigInteger A(""), B("");
+    BigInteger A("0"), B("0");
     A = B;
     ASSERT_EQ(A, B);
 }
@@ -42,13 +42,13 @@ TEST(assignment, test2) {
 }
 
 TEST(assignment, test3) {
-    BigInteger A(""), B("112233445566778899aabbccddeeff00");
+    BigInteger A("0"), B("112233445566778899aabbccddeeff00");
     A = B;
     ASSERT_EQ(A, B);
 }
 
 TEST(assignment, test4) {
-    BigInteger A("abcdef"), B("");
+    BigInteger A("abcdef"), B("0");
     A = B;
     ASSERT_EQ(A, B);
 }
@@ -62,7 +62,7 @@ TEST(assignment, test5) {
 // EQUAL
 
 TEST(equal, test1) {
-    BigInteger A(""), B("");
+    BigInteger A("0"), B("0");
     ASSERT_TRUE(A == B);
 }
 
@@ -82,12 +82,12 @@ TEST(equal, test4) {
 }
 
 TEST(equal, test5) {
-    BigInteger A(""), B("112233445566778899aabbccddeeff00");
+    BigInteger A("0"), B("112233445566778899aabbccddeeff00");
     ASSERT_FALSE(A == B);
 }
 
 TEST(equal, test6) {
-    BigInteger A("abcdef"), B("");
+    BigInteger A("abcdef"), B("0");
     ASSERT_FALSE(A == B);
 }
 
@@ -104,10 +104,11 @@ TEST(equal, test8) {
 // OUTPUT
 
 TEST(output, test1) {
-    BigInteger A("");
+    std::string str("0");
+    BigInteger A(str);
     std::stringstream sstream;
     sstream << A;
-    ASSERT_EQ(sstream.str(), "0");
+    ASSERT_EQ(sstream.str(), str);
 }
 
 TEST(output, test2) {
@@ -137,12 +138,12 @@ TEST(output, test4) {
 // ADD
 
 TEST(add, test1) {
-    BigInteger A(""), B("");
-    ASSERT_EQ(A + B, BigInteger(""));
+    BigInteger A("0"), B("0");
+    ASSERT_EQ(A + B, BigInteger("0"));
 }
 
 TEST(add, test2) {
-    BigInteger A(""), B("abc1234567887654321");
+    BigInteger A("0"), B("abc1234567887654321");
     ASSERT_EQ(A + B, BigInteger("abc1234567887654321"));
 }
 
@@ -184,13 +185,13 @@ TEST(add, test8) {
 //todo: make normal tests especially for subtraction
 
 TEST(sub, test1) {
-    BigInteger A(""), B("");
-    ASSERT_EQ(A - B, BigInteger(""));
+    BigInteger A("0"), B("0");
+    ASSERT_EQ(A - B, BigInteger("0"));
 }
 
 TEST(sub, test2) {
-    BigInteger A(""), B("abc1234567887654321");
-    ASSERT_EQ(A - B, BigInteger(""));
+    BigInteger A("0"), B("abc1234567887654321");
+    ASSERT_EQ(A - B, BigInteger("0"));
 }
 
 TEST(sub, test3) {
@@ -258,9 +259,9 @@ TEST(mul, test4) {
 }
 
 TEST(mul, test5) {
-    BigInteger A("");
+    BigInteger A("0");
     BigInteger B("dee6b883aa2261c7f8dc176e05a9bd7eb7f758620e23190401cfd08e2304d9733396ded24d17aebed59d41d9e78b6d61115a836741e75fbaaf108c4fdecdb36b71a12be0338239ef12f9a05a183645321423d11d4bd430ed5c682dcdb7a6dcdc1ec28cd56aafb3e5646e3047750197d0fed5ba31a5518c806888b0c2fbc87962fda13670d595137afe1f82d66aa3a4e16e72c421b1c443f35a5bc4a586b5d34d3bee5fce4b0dc2de8f71f7e5220c54fc6109782b82abe3e1722b2de8a056ad01b02ab7302c9c0a45f2768b914f797a6137071136807e9aebd19fb7e6268c3d2cbebbcf7bda0f88770277c41e8af32c5f47aada0233422c9866c76b22aa2e0cbc");
-    BigInteger C("");
+    BigInteger C("0");
     ASSERT_EQ(A * B, C);
 }
 

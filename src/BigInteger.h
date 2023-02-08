@@ -6,7 +6,7 @@
 
 class BigInteger {
 private:
-    uint32_t *arr{};
+    uint32_t *arr;
     int digits_count;
 
     explicit BigInteger(uint32_t *ptr, int length);
