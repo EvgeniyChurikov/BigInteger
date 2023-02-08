@@ -116,14 +116,13 @@ BigInteger BigInteger::operator+(const BigInteger &bigInteger) const {
     }
 }
 
-uint32_t * removeLeadingZeros(uint32_t *arr, int length, int &newLength) {
+uint32_t *removeLeadingZeros(uint32_t *arr, int length, int &newLength) {
     int i;
     for (i = length - 1; i >= 0 && arr[i] == 0; --i);
     if (i == -1) {
         newLength = 0;
         return nullptr;
-    }
-    else {
+    } else {
         newLength = i + 1;
         return (uint32_t *) realloc(arr, (i + 1) * 4);
     }
@@ -238,8 +237,7 @@ BigInteger BigInteger::operator/(const BigInteger &bigInteger) const {
             B_[q + B.digits_count] = B.arr[B.digits_count - 1] >> (32 - r);
             for (int i = q + B.digits_count + 1; i < A.digits_count; ++i)
                 B_[i] = 0;
-        }
-        else {
+        } else {
             B_[q] = B.arr[0];
             for (int i = 1; i < B.digits_count; ++i)
                 B_[q + i] = B.arr[i];
