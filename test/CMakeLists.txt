@@ -5,5 +5,13 @@ FetchContent_Declare(gtest
 )
 FetchContent_MakeAvailable(gtest)
 
-add_executable(unit_tests BigIntegerTests.cpp)
+add_executable(unit_tests
+        CopyTests.cpp
+        AssignmentTests.cpp
+        EqualTests.cpp
+        OutputTests.cpp
+        AddTests.cpp
+        SubTests.cpp
+        MulTests.cpp
+        DivTests.cpp)
 target_link_libraries(unit_tests PRIVATE BigInteger gtest_main)
